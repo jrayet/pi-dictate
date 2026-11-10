@@ -191,6 +191,7 @@ export default function (pi: ExtensionAPI) {
     // Local fork: red dot + the braille meter, which shifts with the mic level.
     // The "listening…" label is gone; the idle state keeps the same glyph at
     // level 0 so the row never appears/disappears.
+    // Order is fixed: red dot first (leftmost), then the white meter line.
     const render = () => {
       const dot = activeCtx?.ui.theme.fg("error", "●") ?? "●";
       setStatus(`${dot} ${meter.map(rmsToBlock).join("")}`);
@@ -226,7 +227,8 @@ export default function (pi: ExtensionAPI) {
   const showIdle = () => {
     const target = lastCtx ?? activeCtx;
     if (!target) return;
-    target.ui.setStatus("dictate", target.ui.theme.fg("dim", IDLE_GLYPH));
+    // White, not dim: the inactive line stays plainly visible.
+    target.ui.setStatus("dictate", target.ui.theme.fg("text", IDLE_GLYPH));
   };
 
   /** Resolve where dictated text would go RIGHT NOW, based on keyboard focus. */
