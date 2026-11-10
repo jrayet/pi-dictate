@@ -102,10 +102,8 @@ const SPINNER_INTERVAL_MS = 80;
 //   METER_CEILING_DB  = level at which the bar is full (less negative = needs louder to peg)
 const METER_CELLS = 6;
 const METER_TICK_MS = 60;
-// Braille ramp. Every level keeps the bottom dot pair (7+8), so the meter reads as
-// a line that grows upward instead of bars that vanish; level 0 is exactly the
-// idle glyph.
-const PEAK_BLOCKS = ["⣀", "⣄", "⣤", "⣦", "⣶", "⣷", "⣿"];
+// Braille ramp (the upstream alternative, switched on). Level 0 is blank.
+const PEAK_BLOCKS = ["⠀", "⣀", "⣄", "⣤", "⣦", "⣶", "⣷", "⣿"];
 // const PEAK_BLOCKS = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
 const METER_FLOOR_DB = -50;
 const METER_CEILING_DB = -10;
@@ -218,9 +216,9 @@ export default function (pi: ExtensionAPI) {
 
   // Idle indicator: a flat line of meter cells, always present so the status
   // row does not pop in and out of existence. Dimmed to stay quiet.
-  // Idle line is the ramp's level 0, so idle and the quietest recording frame are
-  // the same glyph.
-  const IDLE_GLYPH = PEAK_BLOCKS[0]!.repeat(METER_CELLS);
+  // Idle line: the ramp's first visible step, kept static so the row is always
+  // present. Level 0 is blank in the ramp, so idle starts at index 1.
+  const IDLE_GLYPH = PEAK_BLOCKS[1]!.repeat(METER_CELLS);
   const showIdle = () => {
     const target = lastCtx ?? activeCtx;
     if (!target) return;
