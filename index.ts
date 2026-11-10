@@ -102,8 +102,11 @@ const SPINNER_INTERVAL_MS = 80;
 //   METER_CEILING_DB  = level at which the bar is full (less negative = needs louder to peg)
 const METER_CELLS = 6;
 const METER_TICK_MS = 60;
-const PEAK_BLOCKS = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
-// const PEAK_BLOCKS = ["⠀", "⣀", "⣄", "⣤", "⣦", "⣶", "⣷", "⣿"];
+// Braille ramp. Every level keeps the bottom dot pair (7+8), so the meter reads as
+// a line that grows upward instead of bars that vanish; level 0 is exactly the
+// idle glyph.
+const PEAK_BLOCKS = ["⣀", "⣄", "⣤", "⣦", "⣶", "⣷", "⣿"];
+// const PEAK_BLOCKS = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
 const METER_FLOOR_DB = -50;
 const METER_CEILING_DB = -10;
 
@@ -183,14 +186,19 @@ export default function (pi: ExtensionAPI) {
     // shouts in the footer. `●` is the same dot pi's own docs use for
     // indicators; theme "error" gives the red. (If you ever want strictly
     // ASCII, swap the glyph for "O".)
-    // Local fork: while dictating, the status row shows only the red dot. The
-    // live meter bars and the "listening…" label are intentionally gone; the
-    // idle state keeps a flat line so the row never appears/disappears.
+    // Local fork: red dot + the braille meter, which shifts with the mic level.
+    // The "listening…" label is gone; the idle state keeps the same glyph at
+    // level 0 so the row never appears/disappears.
     const render = () => {
       const dot = activeCtx?.ui.theme.fg("error", "●") ?? "●";
-      setStatus(dot);
+      setStatus(`${dot} ${meter.map(rmsToBlock).join("")}`);
     };
     render();
+    meterTimer = setInterval(() => {
+      meter.shift();
+      meter.push(currentLevel);
+      render();
+    }, METER_TICK_MS);
   };
 
   /** Animate the dictate status row with a braille spinner + suffix message. */
@@ -210,9 +218,9 @@ export default function (pi: ExtensionAPI) {
 
   // Idle indicator: a flat line of meter cells, always present so the status
   // row does not pop in and out of existence. Dimmed to stay quiet.
-  // Braille, not block elements, so the idle line matches the braille spinner.
-  // U+28C0 is the bottom-row dot pair: same baseline weight as the old ▁ block.
-  const IDLE_GLYPH = "\u28C0".repeat(METER_CELLS);
+  // Idle line is the ramp's level 0, so idle and the quietest recording frame are
+  // the same glyph.
+  const IDLE_GLYPH = PEAK_BLOCKS[0]!.repeat(METER_CELLS);
   const showIdle = () => {
     const target = lastCtx ?? activeCtx;
     if (!target) return;
