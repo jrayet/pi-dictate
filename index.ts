@@ -122,10 +122,14 @@ function rmsFromPcm16(buf: Buffer): number {
 
 /** Map a normalized RMS value to one of PEAK_BLOCKS by converting to dB and clamping into the visible range. */
 function rmsToBlock(rms: number): string {
-  if (rms <= 0) return PEAK_BLOCKS[0]!;
+  // Floor at index 1: level 0 of the braille ramp is blank, and a blank meter
+  // makes the line vanish at quiet moments. The floor keeps the baseline visible
+  // whether you are silent or loud.
+  const floor = 1;
+  if (rms <= 0) return PEAK_BLOCKS[floor]!;
   const db = 20 * Math.log10(rms);
   const t = Math.max(0, Math.min(1, (db - METER_FLOOR_DB) / (METER_CEILING_DB - METER_FLOOR_DB)));
-  const idx = Math.floor(t * (PEAK_BLOCKS.length - 1));
+  const idx = Math.max(floor, Math.floor(t * (PEAK_BLOCKS.length - 1)));
   return PEAK_BLOCKS[idx]!;
 }
 
@@ -216,8 +220,8 @@ export default function (pi: ExtensionAPI) {
 
   // Idle indicator: a flat line of meter cells, always present so the status
   // row does not pop in and out of existence. Dimmed to stay quiet.
-  // Idle line: the ramp's first visible step, kept static so the row is always
-  // present. Level 0 is blank in the ramp, so idle starts at index 1.
+  // Idle line: the same glyph the meter floors at, so idle and a silent
+  // recording frame look identical.
   const IDLE_GLYPH = PEAK_BLOCKS[1]!.repeat(METER_CELLS);
   const showIdle = () => {
     const target = lastCtx ?? activeCtx;
