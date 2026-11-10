@@ -183,16 +183,14 @@ export default function (pi: ExtensionAPI) {
     // shouts in the footer. `●` is the same dot pi's own docs use for
     // indicators; theme "error" gives the red. (If you ever want strictly
     // ASCII, swap the glyph for "O".)
+    // Local fork: while dictating, the status row shows only the red dot. The
+    // live meter bars and the "listening…" label are intentionally gone; the
+    // idle state keeps a flat line so the row never appears/disappears.
     const render = () => {
       const dot = activeCtx?.ui.theme.fg("error", "●") ?? "●";
-      setStatus(`${dot} ${meter.map(rmsToBlock).join("")} listening…`);
+      setStatus(dot);
     };
     render();
-    meterTimer = setInterval(() => {
-      meter.shift();
-      meter.push(currentLevel);
-      render();
-    }, METER_TICK_MS);
   };
 
   /** Animate the dictate status row with a braille spinner + suffix message. */
@@ -209,6 +207,15 @@ export default function (pi: ExtensionAPI) {
   let tuiHandle: any = null;
   let removeInputListener: (() => void) | null = null;
   let lastCtx: ExtensionContext | null = null;
+
+  // Idle indicator: a flat line of meter cells, always present so the status
+  // row does not pop in and out of existence. Dimmed to stay quiet.
+  const IDLE_GLYPH = "\u2581".repeat(METER_CELLS);
+  const showIdle = () => {
+    const target = lastCtx ?? activeCtx;
+    if (!target) return;
+    target.ui.setStatus("dictate", target.ui.theme.fg("dim", IDLE_GLYPH));
+  };
 
   /** Resolve where dictated text would go RIGHT NOW, based on keyboard focus. */
   const resolveTarget = (): Target | null => {
@@ -294,7 +301,7 @@ export default function (pi: ExtensionAPI) {
     }
     finals = [];
     state = "idle";
-    setStatus(undefined);
+    showIdle();
     activeCtx = null;
     flushed = false;
     cancelled = false;
@@ -509,6 +516,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_start", (_event, ctx) => {
     lastCtx = ctx;
+    if (ctx.mode === "tui") showIdle();
     if (ctx.mode !== "tui" || tuiHandle) return;
     // Capture the TUI handle via an invisible zero-height widget. The
     // listener function reference is stable, so even if the factory re-runs
