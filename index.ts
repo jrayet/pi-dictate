@@ -210,7 +210,9 @@ export default function (pi: ExtensionAPI) {
 
   // Idle indicator: a flat line of meter cells, always present so the status
   // row does not pop in and out of existence. Dimmed to stay quiet.
-  const IDLE_GLYPH = "\u2581".repeat(METER_CELLS);
+  // Braille, not block elements, so the idle line matches the braille spinner.
+  // U+28C0 is the bottom-row dot pair: same baseline weight as the old ▁ block.
+  const IDLE_GLYPH = "\u28C0".repeat(METER_CELLS);
   const showIdle = () => {
     const target = lastCtx ?? activeCtx;
     if (!target) return;
