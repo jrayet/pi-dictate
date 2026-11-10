@@ -224,11 +224,15 @@ export default function (pi: ExtensionAPI) {
   // Idle line: the same glyph the meter floors at, so idle and a silent
   // recording frame look identical.
   const IDLE_GLYPH = PEAK_BLOCKS[1]!.repeat(METER_CELLS);
+  // Placeholder for the red dot so the row keeps its shape when idle: hollow
+  // circle in the same slot the filled dot occupies while recording.
+  const IDLE_DOT = "○";
   const showIdle = () => {
     const target = lastCtx ?? activeCtx;
     if (!target) return;
-    // White, not dim: the inactive line stays plainly visible.
-    target.ui.setStatus("dictate", target.ui.theme.fg("text", IDLE_GLYPH));
+    // White, not dim: the inactive line and placeholder stay plainly visible.
+    const placeholder = target.ui.theme.fg("text", IDLE_DOT);
+    target.ui.setStatus("dictate", `${placeholder} ${target.ui.theme.fg("text", IDLE_GLYPH)}`);
   };
 
   /** Resolve where dictated text would go RIGHT NOW, based on keyboard focus. */
